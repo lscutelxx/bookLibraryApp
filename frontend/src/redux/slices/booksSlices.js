@@ -3,7 +3,10 @@ import axios from 'axios';
 import createBookWithId from '../../utils/createBookWithId';
 import { setError } from './errorSlice';
 
-const initialState = [];
+const initialState = {
+  books: [],
+  isLoadingViaAPI: false,
+};
 
 export const fetchBook = createAsyncThunk(
   'books/fetchBook',
@@ -13,7 +16,7 @@ export const fetchBook = createAsyncThunk(
       return res.data;
     } catch (error) {
       thunkAPI.dispatch(setError(error.message));
-      throw error;
+      return thunkAPI.rejectWithValue(error);
     }
   }
 );
@@ -23,16 +26,19 @@ const booksSlice = createSlice({
   initialState,
   reducers: {
     addBook: (state, action) => {
-      state.push(action.payload);
+      state.books.push(action.payload);
     },
     deleteBook: (state, action) => {
-      return state.filter((book) => book.id !== action.payload);
+      return {
+        ...state,
+        books: state.books.filter((book) => book.id !== action.payload),
+      };
     },
     toggleFavourite: (state, action) => {
-      state.map((book) => {
-        book.id === action.payload
-          ? { ...book, isFavourite: !book.isFavourite }
-          : book;
+      state.books.forEach((book) => {
+        if (book.id === action.payload) {
+          book.isFavourite = !book.isFavourite;
+        }
       });
     },
   },
@@ -45,9 +51,16 @@ const booksSlice = createSlice({
   // },
   extraReducers: (builder) => {
     builder.addCase(fetchBook.fulfilled, (state, action) => {
+      state.isLoadingViaAPI = false;
       if (action.payload.title && action.payload.author) {
-        state.push(createBookWithId(action.payload, 'API'));
+        state.books.push(createBookWithId(action.payload, 'API'));
       }
+    });
+    builder.addCase(fetchBook.pending, (state) => {
+      state.isLoadingViaAPI = true;
+    });
+    builder.addCase(fetchBook.rejected, (state) => {
+      state.isLoadingViaAPI = false;
     });
   },
 });
@@ -55,8 +68,10 @@ const booksSlice = createSlice({
 export default booksSlice.reducer;
 
 export const selectBooks = (state) => {
-  return state.books;
+  return state.books.books;
 };
+
+export const selectIsLoadingViaAPI = (state) => state.books.isLoadingViaAPI;
 
 export const { addBook, deleteBook, toggleFavourite } = booksSlice.actions;
 
