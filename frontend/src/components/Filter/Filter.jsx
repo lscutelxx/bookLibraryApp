@@ -7,7 +7,7 @@ import {
   setOnlyFavouriteFilter,
   selectOnlyFavouriteFilter,
   setFilterAuthor,
-} from '../../redux/books/slices/filterSlice';
+} from '../../redux/slices/filterSlice';
 import './Filter.css';
 
 const Filter = () => {
